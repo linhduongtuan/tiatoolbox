@@ -861,40 +861,74 @@ def save_as_json(
         json.dump(shadow_data, handle)
 
 
-def select_device(*, on_gpu: bool) -> str:
-    """Selects the appropriate device as requested.
+# def select_device(*, on_gpu: bool) -> str:
+#     """Selects the appropriate device as requested.
+
+#     Args:
+#         on_gpu (bool):
+#             Selects gpu if True.
+
+#     Returns:
+#         str:
+#             "gpu" if on_gpu is True otherwise returns "cpu"
+
+#     """
+#     if on_gpu:
+#         return "cuda"
+
+#     return "cpu"
+
+
+# def model_to(model: torch.nn.Module, *, on_gpu: bool) -> torch.nn.Module:
+#     """Transfers model to cpu/gpu.
+
+#     Args:
+#         model (torch.nn.Module): PyTorch defined model.
+#         on_gpu (bool): Transfers model to gpu if True otherwise to cpu.
+
+#     Returns:
+#         torch.nn.Module:
+#             The model after being moved to cpu/gpu.
+#     """
+#     if on_gpu:  # DataParallel work only for cuda
+#         model = torch.nn.DataParallel(model)
+#         return model.to("cuda")
+
+#     return model.to("cpu")
+
+def select_device(choose_device: str = "cpu") -> str:
+    """
+    Selects the appropriate compute device as requested.
 
     Args:
-        on_gpu (bool):
-            Selects gpu if True.
+        choose_device (str): Can be "gpu", "mps", or "cpu". 
+        Automatically falls back to "cpu" if the choice is not available.
 
     Returns:
-        str:
-            "gpu" if on_gpu is True otherwise returns "cpu"
-
+        str: Device string as per availability and request ("cuda", "mps", "cpu").
     """
-    if on_gpu:
+    if choose_device == "gpu" and torch.cuda.is_available():
         return "cuda"
+    elif choose_device == "mps" and torch.backends.mps.is_available():
+        return "mps"
+    else:
+        return "cpu"
 
-    return "cpu"
-
-
-def model_to(model: torch.nn.Module, *, on_gpu: bool) -> torch.nn.Module:
-    """Transfers model to cpu/gpu.
+def model_to(model: torch.nn.Module, choose_device: str = "cpu") -> torch.nn.Module:
+    """
+    Transfers model to the specified compute device (GPU, MPS, or CPU).
 
     Args:
         model (torch.nn.Module): PyTorch defined model.
-        on_gpu (bool): Transfers model to gpu if True otherwise to cpu.
+        choose_device (str): Device choice - "gpu", "mps", or "cpu".
 
     Returns:
-        torch.nn.Module:
-            The model after being moved to cpu/gpu.
+        torch.nn.Module: The model after being moved to the specified device.
     """
-    if on_gpu:  # DataParallel work only for cuda
+    device = select_device(choose_device)
+    if device == "cuda":  # DataParallel works only for CUDA
         model = torch.nn.DataParallel(model)
-        return model.to("cuda")
-
-    return model.to("cpu")
+    return model.to(device)
 
 
 def get_bounding_box(img: np.ndarray) -> np.ndarray:
